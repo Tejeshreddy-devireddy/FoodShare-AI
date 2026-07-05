@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: foodshare-mongodb
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: foodshare-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: foodshare-api
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/foodshare
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_SERVICE_URL=http://ai:8000
+      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
+    depends_on:
+      - mongodb
+      - redis
+    restart: unless-stopped
+
+  ai:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai
+    container_name: foodshare-ai-service
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - AI_API_KEY=${AI_API_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    container_name: foodshare-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_AI_URL=http://localhost:8000
+    depends_on:
+      - api
+      - ai
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  redis_data:

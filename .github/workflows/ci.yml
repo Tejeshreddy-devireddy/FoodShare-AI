@@ -1,0 +1,36 @@
+
+
+
+name: GreenShare AI CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-size: '20'
+        cache: 'npm'
+
+    - name: Install Monorepo Dependencies
+      run: npm install
+
+    - name: Type Check & Lint API
+      run: npm run build --workspace=apps/api
+
+    - name: Build Next.js Web App
+      run: npm run build --workspace=apps/web
+      env:
+        NEXT_PUBLIC_API_URL: http://localhost:5000/api
+        NEXT_PUBLIC_AI_URL: http://localhost:8000
