@@ -22,20 +22,20 @@ export function AuditLogsFeed({ recentLogs }: AuditLogsFeedProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-zinc-900 pb-2 text-zinc-500 uppercase tracking-wider font-mono">
+              <tr className="border-b pb-2 uppercase tracking-wider font-mono" style={{ borderColor: 'rgba(15,23,42,0.08)', color: '#94a3b8' }}>
                 <th className="py-2.5">Timestamp</th>
                 <th>Actor Email</th>
                 <th>Action Triggered</th>
                 <th className="text-right">Integrity Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-900">
+              <tbody className="divide-y" style={{ borderColor: 'rgba(15,23,42,0.06)' }}>
               {recentLogs?.map((log: any) => (
-                <tr key={log._id} className="text-zinc-300 font-mono">
-                  <td className="py-3 text-[10px] text-zinc-500">{new Date(log.createdAt).toLocaleString()}</td>
+                <tr key={log._id} className="font-mono" style={{ color: '#475569' }}>
+                  <td className="py-3 text-[10px]" style={{ color: '#94a3b8' }}>{new Date(log.createdAt).toLocaleString()}</td>
                   <td>{log.actorEmail}</td>
                   <td>
-                    <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded font-semibold text-zinc-300">
+                    <span className="px-2 py-0.5 rounded font-semibold" style={{ backgroundColor: 'rgba(15,23,42,0.06)', border: '1px solid rgba(15,23,42,0.10)', color: '#475569' }}>
                       {log.action}
                     </span>
                   </td>

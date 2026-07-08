@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TransitionProvider } from "@/components/TransitionContext";
+import { SmoothScroll } from "@/components/SmoothScroll";
+import LivingBackground from "@/components/LivingBackground";
+import CursorFollower from "@/components/CursorFollower";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-[#09090b] text-[#fafafa]">
+      <body className="min-h-full flex flex-col bg-[#09090b] text-[#fafafa] relative">
+        <LivingBackground />
+        <CursorFollower />
         <TransitionProvider>
-          {children}
+          <SmoothScroll>
+            {children}
+          </SmoothScroll>
         </TransitionProvider>
       </body>
     </html>

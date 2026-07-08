@@ -4,65 +4,104 @@ import React, { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Lock, Mail, ShieldAlert, Heart, Users, Truck, Utensils, ArrowLeft, ShieldCheck 
+  ShieldAlert, Heart, Users, Truck, Utensils, ArrowLeft, ShieldCheck 
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { apiRequest, setAuthToken, setCurrentUser } from '@/lib/api';
 
 type RoleConfig = {
   title: string;
   subtitle: string;
-  accentClass: string;
-  btnClass: string;
+  accentColor: string;
+  accentBg: string;
+  btnGradient: string;
+  btnShadow: string;
   icon: React.ReactNode;
   dbRole: string;
   dashboardPath: string;
-  bgGlow: string;
+  glowColor: string;
 };
 
 const ROLE_CONFIGS: Record<string, RoleConfig> = {
   donor: {
     title: 'Donor Portal',
     subtitle: 'Restaurants, Hotels, Bakeries, Catering & Individuals',
-    accentClass: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10',
-    btnClass: 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20',
-    icon: <Utensils className="w-6 h-6 text-emerald-400" />,
+    accentColor: '#059669',
+    accentBg: 'rgba(16,185,129,0.08)',
+    btnGradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    btnShadow: '0 4px 16px rgba(16,185,129,0.30)',
+    icon: <Utensils className="w-6 h-6" style={{ color: '#059669' }} />,
     dbRole: 'Donor',
     dashboardPath: '/dashboard/donor',
-    bgGlow: 'bg-emerald-500/5',
+    glowColor: 'rgba(16,185,129,0.07)',
   },
   ngo: {
     title: 'NGO Portal',
     subtitle: 'Food Banks, Shelters, Soup Kitchens & Community Centers',
-    accentClass: 'text-sky-400 border-sky-500/20 bg-sky-500/10',
-    btnClass: 'bg-sky-500 hover:bg-sky-400 text-white shadow-sky-500/20',
-    icon: <Heart className="w-6 h-6 text-sky-400" />,
+    accentColor: '#0284c7',
+    accentBg: 'rgba(14,165,233,0.08)',
+    btnGradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+    btnShadow: '0 4px 16px rgba(14,165,233,0.30)',
+    icon: <Heart className="w-6 h-6" style={{ color: '#0284c7' }} />,
     dbRole: 'NGO',
     dashboardPath: '/dashboard/ngo',
-    bgGlow: 'bg-sky-500/5',
+    glowColor: 'rgba(14,165,233,0.07)',
   },
   volunteer: {
     title: 'Volunteer Portal',
     subtitle: 'Rescue Riders, Drivers, Delivery Partners & Co-ordinators',
-    accentClass: 'text-amber-400 border-amber-500/20 bg-amber-500/10',
-    btnClass: 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20',
-    icon: <Truck className="w-6 h-6 text-amber-400" />,
+    accentColor: '#d97706',
+    accentBg: 'rgba(245,158,11,0.08)',
+    btnGradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    btnShadow: '0 4px 16px rgba(245,158,11,0.30)',
+    icon: <Truck className="w-6 h-6" style={{ color: '#d97706' }} />,
     dbRole: 'Volunteer',
     dashboardPath: '/dashboard/volunteer',
-    bgGlow: 'bg-amber-500/5',
+    glowColor: 'rgba(245,158,11,0.07)',
   },
   admin: {
     title: 'Admin Console',
     subtitle: 'System Administrators, Analysts & Operations Managers',
-    accentClass: 'text-violet-400 border-violet-500/20 bg-violet-500/10',
-    btnClass: 'bg-violet-500 hover:bg-violet-400 text-white shadow-violet-500/20',
-    icon: <ShieldCheck className="w-6 h-6 text-violet-400" />,
+    accentColor: '#7c3aed',
+    accentBg: 'rgba(124,58,237,0.08)',
+    btnGradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+    btnShadow: '0 4px 16px rgba(124,58,237,0.30)',
+    icon: <ShieldCheck className="w-6 h-6" style={{ color: '#7c3aed' }} />,
     dbRole: 'Admin',
     dashboardPath: '/dashboard/admin',
-    bgGlow: 'bg-violet-500/5',
+    glowColor: 'rgba(124,58,237,0.07)',
   },
 };
+
+// Light-themed input component matching landing page aesthetics
+function LightInput({ label, accentColor, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string; accentColor?: string }) {
+  const accent = accentColor || '#10b981';
+  return (
+    <div className="w-full space-y-1.5">
+      {label && (
+        <label className="block text-xs font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>
+          {label}
+        </label>
+      )}
+      <input
+        className="w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 focus:outline-none"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.80)',
+          border: '1px solid rgba(15,23,42,0.12)',
+          color: '#0f172a',
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.border = `1px solid ${accent}80`;
+          e.currentTarget.style.boxShadow = `0 0 0 3px ${accent}18`;
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.border = '1px solid rgba(15,23,42,0.12)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        {...props}
+      />
+    </div>
+  );
+}
 
 export default function RoleLoginPage() {
   const router = useRouter();
@@ -76,16 +115,18 @@ export default function RoleLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Validate route parameter
   const config = ROLE_CONFIGS[roleKey];
   if (!config) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex flex-col justify-center items-center p-6 text-center">
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl max-w-md">
-          <ShieldAlert className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Invalid Portal Route</h2>
-          <p className="text-sm text-zinc-400 mb-6">The portal role you are trying to access does not exist.</p>
-          <Link href="/" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium">
+      <div className="min-h-screen flex flex-col justify-center items-center p-6 text-center" style={{ backgroundColor: '#FFF5EE' }}>
+        <div
+          className="p-4 rounded-2xl max-w-md"
+          style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)' }}
+        >
+          <ShieldAlert className="w-12 h-12 mx-auto mb-4" style={{ color: '#dc2626' }} />
+          <h2 className="text-xl font-bold mb-2" style={{ color: '#0f172a' }}>Invalid Portal Route</h2>
+          <p className="text-sm mb-6" style={{ color: '#64748b' }}>The portal role you are trying to access does not exist.</p>
+          <Link href="/" className="inline-flex items-center gap-2 font-medium transition-colors" style={{ color: '#059669' }}>
             <ArrowLeft className="w-4 h-4" /> Back to Home
           </Link>
         </div>
@@ -115,11 +156,9 @@ export default function RoleLoginPage() {
         return;
       }
 
-      // Save credentials
       setAuthToken(res.accessToken);
       setCurrentUser(res.user);
 
-      // Validate role matching
       const userRole = res.user.role;
       if (userRole.toLowerCase() !== roleKey) {
         const targetConfig = ROLE_CONFIGS[userRole.toLowerCase()];
@@ -140,36 +179,87 @@ export default function RoleLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] ${config.bgGlow} rounded-full blur-[120px] pointer-events-none`} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-zinc-900/50 rounded-full blur-[100px] pointer-events-none" />
+    <div
+      className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden"
+      style={{ backgroundColor: '#FFF5EE' }}
+    >
+      {/* Volumetric background lights matching landing page */}
+      <div
+        className="absolute top-[-15%] left-[10%] rounded-full pointer-events-none z-0"
+        style={{ width: '700px', height: '700px', backgroundColor: config.glowColor, filter: 'blur(160px)' }}
+      />
+      <div
+        className="absolute top-[25%] right-[-10%] rounded-full pointer-events-none z-0"
+        style={{ width: '500px', height: '500px', backgroundColor: 'rgba(251,191,36,0.06)', filter: 'blur(140px)' }}
+      />
+      <div
+        className="absolute bottom-[20%] left-[-15%] rounded-full pointer-events-none z-0"
+        style={{ width: '700px', height: '700px', backgroundColor: 'rgba(249,115,22,0.04)', filter: 'blur(180px)' }}
+      />
 
+      {/* Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center z-10 px-4">
         {/* Back Link */}
-        <Link href="/" className="inline-flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-xs mb-8 transition-colors">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs mb-8 transition-colors font-medium"
+          style={{ color: '#94a3b8' }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = '#0f172a')}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = '#94a3b8')}
+        >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to marketing site
         </Link>
 
         {/* Logo */}
-        <div className="inline-flex items-center gap-2.5 font-bold text-2xl tracking-tight text-white mb-6">
-          <span className={`p-2 rounded-xl border ${config.accentClass} shadow-[0_0_15px_rgba(16,185,129,0.05)]`}>
+        <div className="inline-flex items-center gap-2.5 font-bold text-2xl tracking-tight mb-6" style={{ color: '#0f172a' }}>
+          <span
+            className="p-2 rounded-xl"
+            style={{
+              backgroundColor: config.accentBg,
+              border: `1px solid ${config.accentColor}28`,
+              boxShadow: `0 0 12px ${config.accentColor}18`,
+            }}
+          >
             {config.icon}
           </span>
-          <span>FoodShare <span className="text-emerald-400 font-extrabold">AI</span></span>
+          <span>
+            FoodShare{' '}
+            <span
+              className="font-extrabold bg-clip-text text-transparent"
+              style={{ backgroundImage: 'linear-gradient(135deg, #10b981, #0ea5e9)' }}
+            >
+              AI
+            </span>
+          </span>
         </div>
 
-        <h2 className="text-3xl font-black text-white tracking-tight">{config.title}</h2>
-        <p className="mt-2 text-sm text-zinc-400 max-w-sm mx-auto">{config.subtitle}</p>
+        <h2 className="text-3xl font-black tracking-tight" style={{ color: '#0f172a' }}>{config.title}</h2>
+        <p className="mt-2 text-sm max-w-sm mx-auto" style={{ color: '#64748b' }}>{config.subtitle}</p>
       </div>
 
+      {/* Card */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10 px-4">
-        <div className="glass-card py-8 px-10 rounded-2xl shadow-2xl border border-zinc-800/80 bg-zinc-950/40 backdrop-blur-md relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
-          
+        <div
+          className="py-8 px-10 rounded-2xl relative overflow-hidden"
+          style={{
+            backgroundColor: 'rgba(255, 252, 249, 0.85)',
+            border: '1px solid rgba(15, 23, 42, 0.08)',
+            boxShadow: '0 8px 32px rgba(15,23,42,0.07), 0 1px 4px rgba(0,0,0,0.04)',
+            backdropFilter: 'blur(16px)',
+          }}
+        >
+          {/* Top accent line */}
+          <div
+            className="absolute top-0 left-0 right-0 h-[2px]"
+            style={{ background: `linear-gradient(90deg, transparent, ${config.accentColor}50, transparent)` }}
+          />
+
           <form className="space-y-6" onSubmit={handleSubmit} id="login-form">
             {error && (
-              <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-center gap-2">
+              <div
+                className="p-3.5 rounded-xl text-xs flex items-center gap-2"
+                style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', color: '#dc2626' }}
+              >
                 <ShieldAlert className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -177,7 +267,7 @@ export default function RoleLoginPage() {
 
             {!twoFactorRequired ? (
               <>
-                <Input
+                <LightInput
                   label="Email Address"
                   type="email"
                   placeholder="name@organization.com"
@@ -185,10 +275,9 @@ export default function RoleLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   id="login-email"
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-white rounded-xl"
+                  accentColor={config.accentColor}
                 />
-
-                <Input
+                <LightInput
                   label="Password"
                   type="password"
                   placeholder="••••••••"
@@ -196,15 +285,18 @@ export default function RoleLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   id="login-password"
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-white rounded-xl"
+                  accentColor={config.accentColor}
                 />
               </>
             ) : (
               <div className="space-y-4">
-                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 leading-relaxed">
+                <div
+                  className="p-3.5 rounded-xl text-xs leading-relaxed"
+                  style={{ backgroundColor: `${config.accentColor}14`, border: `1px solid ${config.accentColor}28`, color: config.accentColor }}
+                >
                   Two-Factor Authentication is enabled. Please enter the OTP sent to your profile. (For demo use code <span className="font-bold">123456</span>)
                 </div>
-                <Input
+                <LightInput
                   label="Enter 6-Digit Code"
                   type="text"
                   placeholder="123456"
@@ -213,18 +305,37 @@ export default function RoleLoginPage() {
                   onChange={(e) => setOtp(e.target.value)}
                   required
                   id="login-otp"
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-white rounded-xl font-mono text-center text-lg tracking-widest"
+                  accentColor={config.accentColor}
                 />
               </div>
             )}
 
             <div className="space-y-3 pt-2">
-              <Button type="submit" className={`w-full py-2.5 rounded-xl font-semibold transition-all duration-300 ${config.btnClass}`} isLoading={isLoading}>
+              {/* Main Sign In Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                id="login-submit"
+                className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                style={{
+                  background: config.btnGradient,
+                  color: '#fff',
+                  boxShadow: config.btnShadow,
+                }}
+              >
+                {isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
                 Sign In to Dashboard
-              </Button>
-              
-              <Button
+              </button>
+
+              {/* Instant Demo Login */}
+              <button
                 type="button"
+                id="demo-login"
                 onClick={() => {
                   const role = config.dbRole;
                   localStorage.setItem('gs_token', 'demo-token-12345');
@@ -236,32 +347,57 @@ export default function RoleLoginPage() {
                   document.cookie = `gs_role=${role}; path=/`;
                   router.push(config.dashboardPath);
                 }}
-                variant="outline"
-                className="w-full py-2.5 rounded-xl border-zinc-800 hover:bg-zinc-900/40 text-zinc-300 hover:text-white font-semibold transition-all"
+                className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer"
+                style={{
+                  backgroundColor: 'rgba(15,23,42,0.04)',
+                  border: '1px solid rgba(15,23,42,0.10)',
+                  color: '#475569',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(15,23,42,0.08)';
+                  (e.currentTarget as HTMLButtonElement).style.color = '#0f172a';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(15,23,42,0.04)';
+                  (e.currentTarget as HTMLButtonElement).style.color = '#475569';
+                }}
               >
                 Instant Demo Login
-              </Button>
+              </button>
             </div>
           </form>
         </div>
 
         {/* Alternate Portals Link */}
-        <div className="mt-8 text-center text-xs text-zinc-500 space-y-3">
+        <div className="mt-8 text-center text-xs space-y-3" style={{ color: '#94a3b8' }}>
           <p>
             Need a different portal?{' '}
             <span className="inline-flex gap-2 font-medium">
               {Object.entries(ROLE_CONFIGS)
                 .filter(([k]) => k !== roleKey && k !== 'admin')
                 .map(([k, cfg]) => (
-                  <Link key={k} href={`/login/${k}`} className="text-emerald-400 hover:underline capitalize">
-                    {k}
+                  <Link
+                    key={k}
+                    href={`/login/${k}`}
+                    className="capitalize transition-colors"
+                    style={{ color: cfg.accentColor }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline')}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none')}
+                  >
+                    {k.charAt(0).toUpperCase() + k.slice(1)}
                   </Link>
                 ))}
             </span>
           </p>
           <p>
             New to FoodShare AI?{' '}
-            <Link href="/register" className="text-zinc-300 hover:text-white underline font-medium">
+            <Link
+              href="/register"
+              className="font-medium underline transition-colors"
+              style={{ color: '#475569' }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = '#0f172a')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = '#475569')}
+            >
               Create an account
             </Link>
           </p>

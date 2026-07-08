@@ -29,8 +29,8 @@ export function DonorStats({ currentUser }: DonorStatsProps) {
           <CardTitle className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Meals Delivered</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col justify-end">
-          <p className="text-4xl font-extrabold text-white font-mono">{currentUser?.stats?.mealsSaved || 140}</p>
-          <p className="text-xs text-emerald-400 font-semibold mt-1">Saved from rotting in landfills</p>
+          <p className="text-4xl font-extrabold font-mono" style={{ color: '#0f172a' }}>{currentUser?.stats?.mealsSaved || 140}</p>
+          <p className="text-xs font-semibold mt-1" style={{ color: '#059669' }}>Saved from rotting in landfills</p>
         </CardContent>
       </Card>
 
@@ -42,11 +42,11 @@ export function DonorStats({ currentUser }: DonorStatsProps) {
           <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
             <Award className="w-8 h-8 text-emerald-400" />
             <div>
-              <p className="text-xs font-bold text-white uppercase tracking-wider">Zero Waste Champion</p>
-              <p className="text-[10px] text-zinc-400">Awarded for saving &gt; 100 meals this month</p>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#0f172a' }}>Zero Waste Champion</p>
+              <p className="text-[10px]" style={{ color: '#64748b' }}>Awarded for saving &gt; 100 meals this month</p>
             </div>
           </div>
-          <button className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-lg text-zinc-200 border border-zinc-700 cursor-pointer">
+          <button className="w-full py-2 text-xs font-semibold rounded-lg cursor-pointer transition-all" style={{ backgroundColor: 'rgba(15,23,42,0.06)', color: '#475569', border: '1px solid rgba(15,23,42,0.10)' }}>
             Download Compliance Report
           </button>
         </CardContent>

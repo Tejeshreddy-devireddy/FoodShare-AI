@@ -8,6 +8,11 @@ import {
   Leaf, Users, Heart, Sparkles, Globe, ChevronDown, Utensils, Truck, ShieldCheck, Mail, ArrowRight, Star, BarChart3, Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Magnetic } from '@/components/Magnetic';
+import TextReveal from '@/components/TextReveal';
+import TiltCard from '@/components/TiltCard';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 // --- Animated Counter Component (Redesigned) ---
 function Counter({
@@ -15,11 +20,13 @@ function Counter({
   duration = 2,
   suffix = '',
   unit = '',
+  onComplete,
 }: {
   value: number;
   duration?: number;
   suffix?: string;
   unit?: string;
+  onComplete?: () => void;
 }) {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
@@ -37,11 +44,14 @@ function Counter({
       const progress = Math.min(elapsed / totalDuration, 1);
       setCount(Math.floor(easeOutCubic(progress) * value));
       if (progress < 1) raf = requestAnimationFrame(tick);
-      else setCount(value);
+      else {
+        setCount(value);
+        if (onComplete) onComplete();
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [isInView, value, duration]);
+  }, [isInView, value, duration, onComplete]);
 
   // Split suffix: plain symbols (+ %) stay inline; unit words (kg, t) render smaller
   const isWordUnit = unit.trim().length > 0;
@@ -81,6 +91,7 @@ function StatCard({
   index: number;
 }) {
   const prefersReducedMotion = useReducedMotion();
+  const [isCompleted, setIsCompleted] = useState(false);
 
   return (
     <motion.div
@@ -107,7 +118,7 @@ function StatCard({
               },
             }
       }
-      className="relative group rounded-[20px] overflow-hidden flex flex-col items-center text-center px-6 pt-8 pb-7 cursor-default"
+      className={`relative group rounded-[20px] overflow-hidden flex flex-col items-center text-center px-6 pt-8 pb-7 cursor-default transition-all duration-500 ${isCompleted ? 'stat-card-complete-glow' : ''}`}
       style={{ willChange: 'transform, opacity', backgroundColor: 'rgba(255,255,255,0.85)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
     >
       {/* Radial accent glow bleeding from top — always visible, subtle */}
@@ -161,10 +172,10 @@ function StatCard({
 
       {/* Animated Counter */}
       <div
-        className="relative z-10 text-[46px] sm:text-[52px] font-black font-mono tracking-tight leading-none mb-3 group-hover:scale-[1.05] transition-transform duration-300 origin-center"
+        className="relative z-10 text-[46px] sm:text-[52px] font-black font-mono tracking-tight leading-none mb-3 group-hover:scale-[1.05] transition-transform duration-300 origin-center animate-pulse"
         style={{ willChange: 'transform', color: '#0f172a' }}
       >
-        <Counter value={value} suffix={suffix} duration={1.7} />
+        <Counter value={value} suffix={suffix} duration={1.7} onComplete={() => setIsCompleted(true)} />
       </div>
 
       {/* Card Title */}
@@ -202,6 +213,26 @@ const heroItemVariants = {
       duration: 0.8,
       ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
     }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+    }
+  }
+};
+
+const cardFadeUp = {
+  hidden: { opacity: 0, y: 40, filter: 'blur(8px)' },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    filter: 'blur(0px)', 
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } 
   }
 };
 
@@ -311,6 +342,19 @@ function ScrollIndicator({ hasScrolled }: { hasScrolled: boolean }) {
 }
 
 export default function LandingPage() {
+  // --- Scroll Parallax Hooks ---
+  const { scrollY } = useScroll();
+  const heroBgY = useTransform(scrollY, [0, 1000], [0, 180]);
+  const heroTextY = useTransform(scrollY, [0, 1000], [0, 80]);
+  
+  // Staggered parallax for floating emojis
+  const emojiY1 = useTransform(scrollY, [0, 1000], [0, -140]);
+  const emojiY2 = useTransform(scrollY, [0, 1000], [0, -80]);
+  const emojiY3 = useTransform(scrollY, [0, 1000], [0, -180]);
+  const emojiY4 = useTransform(scrollY, [0, 1000], [0, -100]);
+  const emojiY5 = useTransform(scrollY, [0, 1000], [0, -150]);
+  const emojiTransforms = [emojiY1, emojiY2, emojiY3, emojiY4, emojiY5];
+
   // --- States ---
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [activeStep, setActiveStep] = useState(0);
@@ -400,6 +444,58 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [prevScrollPos]);
 
+  // Listen to custom step updates
+  useEffect(() => {
+    const handleActiveStepChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setActiveStep(customEvent.detail.step);
+    };
+    window.addEventListener('active-step-change', handleActiveStepChange);
+    return () => {
+      window.removeEventListener('active-step-change', handleActiveStepChange);
+    };
+  }, []);
+
+  // GSAP ScrollTrigger initialization
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const gsapCtx = gsap.context(() => {
+      // Hero content scale and fade on scroll down
+      gsap.to('#hero-content', {
+        scrollTrigger: {
+          trigger: '#hero',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true,
+        },
+        scale: 0.96,
+        opacity: 0.15,
+        y: -80,
+      });
+
+      // Pin How It Works workflow timeline
+      gsap.timeline({
+        scrollTrigger: {
+          trigger: '#how-it-works',
+          start: 'top top',
+          end: '+=1500', // Scroll pinned depth
+          pin: true,
+          scrub: true,
+          onUpdate: (self) => {
+            const step = Math.min(3, Math.floor(self.progress * 4));
+            const event = new CustomEvent('active-step-change', { detail: { step } });
+            window.dispatchEvent(event);
+          }
+        }
+      });
+    });
+
+    return () => {
+      gsapCtx.revert();
+    };
+  }, []);
+
   // Active section tracking for navbar slide animation
   const [activeSection, setActiveSection] = useState('home');
   useEffect(() => {
@@ -471,7 +567,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen text-[#0f172a] relative overflow-hidden font-sans selection:bg-emerald-200 selection:text-emerald-800 antialiased" style={{ backgroundColor: '#FFF5EE' }}>
+    <div className="min-h-screen text-[#0f172a] relative overflow-hidden font-sans selection:bg-emerald-200 selection:text-emerald-800 antialiased" style={{ backgroundColor: 'transparent' }}>
       
       {/* Interactive Cursor Glow Orb */}
       <div 
@@ -499,87 +595,93 @@ export default function LandingPage() {
             boxShadow: '0 4px 24px rgba(180, 140, 100, 0.10), 0 1px 4px rgba(0,0,0,0.06)',
           }}
         >
-          <Link href="/" className="flex items-center gap-2.5 font-bold text-base tracking-tight group" style={{ color: '#0f172a' }}>
-            <motion.div 
-              whileHover={{ scale: 1.08, rotate: 6 }}
-              transition={{ type: "spring", stiffness: 400, damping: 12 }}
-              className="relative"
-            >
-              <img src="/logo.png" className="w-8 h-8 rounded-lg object-cover" style={{ border: '1px solid rgba(15,23,42,0.10)' }} alt="FoodShare AI Logo" />
-            </motion.div>
-            <span className="font-extrabold tracking-tight transition-colors duration-300 group-hover:text-emerald-600">
-              FoodShare<span className="font-black bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #10b981, #0ea5e9)' }}>AI</span>
-            </span>
-          </Link>
+          <Magnetic range={35} strength={0.2}>
+            <Link href="/" className="flex items-center gap-2.5 font-bold text-base tracking-tight group" style={{ color: '#0f172a' }}>
+              <motion.div 
+                whileHover={{ scale: 1.08, rotate: 6 }}
+                transition={{ type: "spring", stiffness: 400, damping: 12 }}
+                className="relative"
+              >
+                <img src="/logo.png" className="w-8 h-8 rounded-lg object-cover" style={{ border: '1px solid rgba(15,23,42,0.10)' }} alt="FoodShare AI Logo" />
+              </motion.div>
+              <span className="font-extrabold tracking-tight transition-colors duration-300 group-hover:text-emerald-600">
+                FoodShare<span className="font-black bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #10b981, #0ea5e9)' }}>AI</span>
+              </span>
+            </Link>
+          </Magnetic>
 
           <nav className="hidden lg:flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest relative">
             {['home', 'about', 'features', 'contact'].map((item) => {
               const isActive = activeSection === item;
               const href = item === 'home' ? '#' : `#${item}`;
               return (
-                <a
-                  key={item}
-                  href={href}
-                  className="relative py-1.5 transition-colors duration-300 select-none"
-                  style={{ color: isActive ? '#0f172a' : '#64748b' }}
-                  onMouseEnter={e => { if (!isActive) (e.target as HTMLElement).style.color = '#0f172a'; }}
-                  onMouseLeave={e => { if (!isActive) (e.target as HTMLElement).style.color = '#64748b'; }}
-                >
-                  {item}
-                  {isActive && (
-                    <motion.div
-                      layoutId="navActiveUnderline"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-                      style={{ background: 'linear-gradient(90deg, #10b981, #0ea5e9)' }}
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                </a>
+                <Magnetic key={item} range={25} strength={0.3}>
+                  <a
+                    href={href}
+                    className="relative py-1.5 transition-colors duration-300 select-none block"
+                    style={{ color: isActive ? '#0f172a' : '#64748b' }}
+                    onMouseEnter={e => { if (!isActive) (e.target as HTMLElement).style.color = '#0f172a'; }}
+                    onMouseLeave={e => { if (!isActive) (e.target as HTMLElement).style.color = '#64748b'; }}
+                  >
+                    {item}
+                    {isActive && (
+                      <motion.div
+                        layoutId="navActiveUnderline"
+                        className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
+                        style={{ background: 'linear-gradient(90deg, #10b981, #0ea5e9)' }}
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                  </a>
+                </Magnetic>
               );
             })}
           </nav>
 
           <div className="flex items-center gap-5 sm:gap-6">
             <div className="hidden lg:block h-4 w-[1px] mr-1" style={{ backgroundColor: 'rgba(15,23,42,0.12)' }} />
-            <a
-              href="#portals"
-              className="text-xs font-bold transition-colors duration-300"
-              style={{ color: '#64748b' }}
-              onMouseEnter={e => ((e.target as HTMLElement).style.color = '#0f172a')}
-              onMouseLeave={e => ((e.target as HTMLElement).style.color = '#64748b')}
-            >
-              Login
-            </a>
-            <a href="#portals">
-              <motion.button
-                whileHover={{ y: -1.5 }}
-                whileTap={{ scale: 0.98 }}
-                className="font-extrabold rounded-xl px-4 py-1.5 h-8 text-xs cursor-pointer transition-all duration-300"
-                style={{
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: '#fff',
-                  boxShadow: '0 4px 16px rgba(16,185,129,0.30)',
-                }}
+            <Magnetic range={30} strength={0.35}>
+              <a
+                href="#portals"
+                className="text-xs font-bold transition-colors duration-300 block"
+                style={{ color: '#64748b' }}
+                onMouseEnter={e => ((e.target as HTMLElement).style.color = '#0f172a')}
+                onMouseLeave={e => ((e.target as HTMLElement).style.color = '#64748b')}
               >
-                Get Started
-              </motion.button>
-            </a>
+                Login
+              </a>
+            </Magnetic>
+            <Magnetic range={40} strength={0.25}>
+              <a href="#portals" className="block">
+                <motion.button
+                  whileHover={{ y: -1.5 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="font-extrabold rounded-xl px-4 py-1.5 h-8 text-xs cursor-pointer transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: '#fff',
+                    boxShadow: '0 4px 16px rgba(16,185,129,0.30)',
+                  }}
+                >
+                  Get Started
+                </motion.button>
+              </a>
+            </Magnetic>
           </div>
         </motion.header>
       </div>
 
-      {/* --- 2. Hero Section — Donate 3D Character --- */}
       <section
         id="hero"
         onMouseMove={handleHeroMouseMove}
         onMouseLeave={handleHeroMouseLeave}
         className="relative w-full h-screen flex items-center overflow-hidden z-10"
-        style={{ backgroundColor: '#FFF5EE' }}
+        style={{ backgroundColor: 'transparent' }}
       >
         {/* ── Full-bleed 3D background image: anchored bottom-right ── */}
         <motion.div
           className="absolute inset-0 select-none pointer-events-none"
-          style={{ zIndex: 0 }}
+          style={{ zIndex: 0, y: heroBgY }}
           animate={{
             scale: [1, 1.012, 1],
           }}
@@ -681,7 +783,7 @@ export default function LandingPage() {
           );
         })}
 
-        {/* ── Heart / star floating icons (charity theme) ── */}
+        {/* ── Heart / star floating icons (charity theme) ──Staggered Parallax Scroll */}
         {['❤️', '🌟', '💛', '🤝', '✨'].map((emoji, i) => (
           <motion.div
             key={`emoji-${i}`}
@@ -692,6 +794,7 @@ export default function LandingPage() {
               zIndex: 3,
               opacity: 0.55,
               willChange: 'transform, opacity',
+              y: emojiTransforms[i],
             }}
             animate={{
               y: [0, -22, 0],
@@ -699,10 +802,24 @@ export default function LandingPage() {
               opacity: [0.45, 0.75, 0.45],
             }}
             transition={{
-              duration: 5 + i * 0.8,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: i * 0.7,
+              y: {
+                duration: 5 + i * 0.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.7,
+              },
+              rotate: {
+                duration: 5 + i * 0.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.7,
+              },
+              opacity: {
+                duration: 5 + i * 0.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.7,
+              }
             }}
           >
             {emoji}
@@ -716,13 +833,14 @@ export default function LandingPage() {
         >
           <div className="max-w-7xl mx-auto px-6 sm:px-10 w-full">
             <motion.div
+              id="hero-content"
               initial="hidden"
               animate="visible"
               variants={heroContainerVariants}
               style={{
                 maxWidth: '52%',
                 x: -heroParallax.x * 0.15,
-                y: -heroParallax.y * 0.15,
+                y: heroTextY,
               }}
               className="flex flex-col items-start justify-center"
             >
@@ -765,7 +883,7 @@ export default function LandingPage() {
                 Feeds a{' '}
                 <span
                   className="bg-clip-text text-transparent"
-                  style={{ backgroundImage: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)' }}
+                  style={{ backgroundImage: 'linear-gradient(135deg, #10b981 0%, #0ea5e9 100%)' }}
                 >
                   Family
                 </span>
@@ -781,7 +899,7 @@ export default function LandingPage() {
                   maxWidth: '440px',
                 }}
               >
-                FoodShare AI connects surplus food and essential goods with verified NGOs and volunteers — putting every donation exactly where it matters most.
+                <TextReveal text="FoodShare AI connects surplus food and essential goods with verified NGOs and volunteers — putting every donation exactly where it matters most." />
               </motion.p>
 
               {/* CTAs */}
@@ -789,39 +907,43 @@ export default function LandingPage() {
                 variants={heroItemVariants}
                 className="flex flex-col sm:flex-row gap-3 mt-9"
               >
-                <Link href="/login/donor">
-                  <motion.button
-                    whileHover={{ y: -3, scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 font-black text-xs uppercase tracking-wider rounded-2xl px-8 cursor-pointer transition-all duration-300"
-                    style={{
-                      height: '48px',
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      color: '#fff',
-                      boxShadow: '0 8px 28px rgba(16,185,129,0.35)',
-                    }}
-                  >
-                    Donate Now
-                    <Heart className="w-4 h-4" />
-                  </motion.button>
-                </Link>
-                <a href="#portals">
-                  <motion.button
-                    whileHover={{ y: -3, scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider rounded-2xl px-8 cursor-pointer transition-all duration-300"
-                    style={{
-                      height: '48px',
-                      backgroundColor: 'rgba(15,23,42,0.07)',
-                      color: '#0f172a',
-                      border: '1.5px solid rgba(15,23,42,0.15)',
-                      backdropFilter: 'blur(8px)',
-                    }}
-                  >
-                    Join Network
-                    <ArrowRight className="w-4 h-4" />
-                  </motion.button>
-                </a>
+                <Magnetic range={40} strength={0.3}>
+                  <Link href="/login/donor">
+                    <motion.button
+                      whileHover={{ y: -3, scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex items-center gap-2 font-black text-xs uppercase tracking-wider rounded-2xl px-8 cursor-pointer transition-all duration-300"
+                      style={{
+                        height: '48px',
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: '#fff',
+                        boxShadow: '0 8px 28px rgba(16,185,129,0.35)',
+                      }}
+                    >
+                      Donate Now
+                      <Heart className="w-4 h-4" />
+                    </motion.button>
+                  </Link>
+                </Magnetic>
+                <Magnetic range={40} strength={0.3}>
+                  <a href="#portals">
+                    <motion.button
+                      whileHover={{ y: -3, scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider rounded-2xl px-8 cursor-pointer transition-all duration-300"
+                      style={{
+                        height: '48px',
+                        backgroundColor: 'rgba(15,23,42,0.07)',
+                        color: '#0f172a',
+                        border: '1.5px solid rgba(15,23,42,0.15)',
+                        backdropFilter: 'blur(8px)',
+                      }}
+                    >
+                      Join Network
+                      <ArrowRight className="w-4 h-4" />
+                    </motion.button>
+                  </a>
+                </Magnetic>
               </motion.div>
 
               {/* Trust indicators */}
@@ -935,67 +1057,78 @@ export default function LandingPage() {
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
           <div className="lg:col-span-5">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">About FoodShare AI</h2>
-            <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95]" style={{ color: '#0f172a' }}>
-              Targeting the Global Food Waste Crisis
+            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">
+              <TextReveal text="About FoodShare AI" />
+            </h2>
+            <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95] text-slate-800">
+              <TextReveal text="Targeting the Global Food Waste Crisis" />
             </p>
           </div>
           <div className="lg:col-span-7 flex items-end">
-            <p className="leading-relaxed font-medium text-base" style={{ color: '#64748b' }}>
-              One-third of all food produced globally goes to waste, generating 8-10% of global greenhouse gas emissions. FoodShare AI was built to solve this logistical bottleneck.
+            <p className="leading-relaxed font-medium text-base text-slate-500">
+              <TextReveal text="One-third of all food produced globally goes to waste, generating 8-10% of global greenhouse gas emissions. FoodShare AI was built to solve this logistical bottleneck." />
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <motion.div 
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
           {/* Card 1: What is FoodShare AI */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="p-10 rounded-[32px] relative overflow-hidden group"
-            style={{ backgroundColor: 'rgba(255,255,255,0.75)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
-          >
-            <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.05) 0%, transparent 60%)' }} />
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl w-fit mb-8 text-emerald-600">
-              <Leaf className="w-6 h-6" />
-            </div>
-            <h3 className="text-2xl font-bold mb-4" style={{ color: '#0f172a' }}>What is FoodShare AI?</h3>
-            <p className="text-sm leading-relaxed font-medium" style={{ color: '#64748b' }}>
-              An intelligent, automated surplus food redistribution ecosystem. We eliminate manual coordination by automatically routing surplus food to community kitchens.
-            </p>
-          </motion.div>
+          <TiltCard className="h-full">
+            <motion.div
+              variants={cardFadeUp}
+              className="p-10 premium-card relative overflow-hidden group select-none cursor-pointer h-full"
+            >
+              <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.05) 0%, transparent 60%)' }} />
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl w-fit mb-8 text-emerald-600 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                <Leaf className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 text-slate-900">What is FoodShare AI?</h3>
+              <p className="text-sm leading-relaxed font-medium text-slate-500">
+                An intelligent, automated surplus food redistribution ecosystem. We eliminate manual coordination by automatically routing surplus food to community kitchens.
+              </p>
+            </motion.div>
+          </TiltCard>
 
           {/* Card 2: Environmental Impact */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="p-10 rounded-[32px] relative overflow-hidden group"
-            style={{ backgroundColor: 'rgba(255,255,255,0.75)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
-          >
-            <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.05) 0%, transparent 60%)' }} />
-            <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-2xl w-fit mb-8 text-sky-600">
-              <Globe className="w-6 h-6" />
-            </div>
-            <h3 className="text-2xl font-bold mb-4" style={{ color: '#0f172a' }}>Environmental Impact</h3>
-            <p className="text-sm leading-relaxed font-medium" style={{ color: '#64748b' }}>
-              Every donation prevents organic waste from entering landfills, stopping methane emissions at the source and conserving the water and energy used in food production.
-            </p>
-          </motion.div>
+          <TiltCard className="h-full">
+            <motion.div
+              variants={cardFadeUp}
+              className="p-10 premium-card relative overflow-hidden group select-none cursor-pointer h-full"
+            >
+              <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.05) 0%, transparent 60%)' }} />
+              <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-2xl w-fit mb-8 text-sky-600 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                <Globe className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 text-slate-900">Environmental Impact</h3>
+              <p className="text-sm leading-relaxed font-medium text-slate-500">
+                Every donation prevents organic waste from entering landfills, stopping methane emissions at the source and conserving the water and energy used in food production.
+              </p>
+            </motion.div>
+          </TiltCard>
 
           {/* Card 3: Community Impact */}
-          <motion.div
-            whileHover={{ y: -8 }}
-            className="p-10 rounded-[32px] relative overflow-hidden group"
-            style={{ backgroundColor: 'rgba(255,255,255,0.75)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
-          >
-            <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, transparent 60%)' }} />
-            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl w-fit mb-8 text-indigo-600">
-              <Users className="w-6 h-6" />
-            </div>
-            <h3 className="text-2xl font-bold mb-4" style={{ color: '#0f172a' }}>Community Impact</h3>
-            <p className="text-sm leading-relaxed font-medium" style={{ color: '#64748b' }}>
-              We strengthen local safety nets. By making donations cost-effective and effortless, we ensure NGOs have a steady, reliable supply of fresh meals.
-            </p>
-          </motion.div>
-        </div>
+          <TiltCard className="h-full">
+            <motion.div
+              variants={cardFadeUp}
+              className="p-10 premium-card relative overflow-hidden group select-none cursor-pointer h-full"
+            >
+              <div className="absolute inset-0 rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, transparent 60%)' }} />
+              <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl w-fit mb-8 text-indigo-600 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                <Users className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 text-slate-900">Community Impact</h3>
+              <p className="text-sm leading-relaxed font-medium text-slate-500">
+                We strengthen local safety nets. By making donations cost-effective and effortless, we ensure NGOs have a steady, reliable supply of fresh meals.
+              </p>
+            </motion.div>
+          </TiltCard>
+        </motion.div>
       </motion.section>
 
       {/* --- 5. How It Works Section --- */}
@@ -1006,17 +1139,21 @@ export default function LandingPage() {
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="py-32 relative z-10 scroll-mt-28"
-        style={{ backgroundColor: 'rgba(255,255,255,0.45)', borderTop: '1px solid rgba(15,23,42,0.07)', borderBottom: '1px solid rgba(15,23,42,0.07)' }}
+        style={{ backgroundColor: 'transparent', borderTop: '1px solid rgba(15,23,42,0.07)', borderBottom: '1px solid rgba(15,23,42,0.07)' }}
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
 
             {/* Left Description Column */}
             <div className="lg:col-span-5 space-y-8">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600">Logistics Workflow</h2>
-              <h3 className="text-5xl font-extrabold tracking-tight uppercase leading-[0.95]" style={{ color: '#0f172a' }}>How the Platform Connects the Network</h3>
-              <p className="leading-relaxed font-medium text-base" style={{ color: '#64748b' }}>
-                By combining computer vision, smart allocation, and route optimization, we make food rescue fast, verified, and transparent.
+              <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600">
+                <TextReveal text="Logistics Workflow" />
+              </h2>
+              <h3 className="text-5xl font-extrabold tracking-tight uppercase leading-[0.95] text-slate-800">
+                <TextReveal text="How the Platform Connects the Network" />
+              </h3>
+              <p className="leading-relaxed font-medium text-base text-slate-500">
+                <TextReveal text="By combining computer vision, smart allocation, and route optimization, we make food rescue fast, verified, and transparent." />
               </p>
 
               {/* Progress Indicator Dots */}
@@ -1090,128 +1227,160 @@ export default function LandingPage() {
         className="py-32 max-w-7xl mx-auto px-6 relative z-10 scroll-mt-28"
       >
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">User Portals</h2>
-          <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95]" style={{ color: '#0f172a' }}>
-            Tailored Gateways for Every Collaborator
+          <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">
+            <TextReveal text="User Portals" />
+          </h2>
+          <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95] text-slate-800">
+            <TextReveal text="Tailored Gateways for Every Collaborator" />
           </p>
-          <p className="mt-5 leading-relaxed font-medium text-base" style={{ color: '#64748b' }}>
-            Choose your role to log in or register. Each portal operates as an independent subsystem with custom dashboards, tools, and workflows.
+          <p className="mt-5 leading-relaxed font-medium text-base text-slate-500">
+            <TextReveal text="Choose your role to log in or register. Each portal operates as an independent subsystem with custom dashboards, tools, and workflows." />
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <motion.div 
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+        >
           {/* Card 1: Donor */}
-          <div
-            onMouseEnter={() => setHoveredPortal('donor')}
-            onMouseLeave={() => setHoveredPortal(null)}
-            className="rounded-[32px] p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group"
-            style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
-          >
-            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'donor' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(16,185,129,0.12)' }} />
-            <div>
-              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl w-fit mb-6 text-emerald-600">
-                <Utensils className="w-5 h-5" />
+          <TiltCard className="h-full">
+            <motion.div
+              variants={cardFadeUp}
+              onMouseEnter={() => setHoveredPortal('donor')}
+              onMouseLeave={() => setHoveredPortal(null)}
+              className="p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group premium-card cursor-pointer select-none"
+            >
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'donor' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(16,185,129,0.12)' }} />
+              <div>
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl w-fit mb-6 text-emerald-600 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                  <Utensils className="w-5 h-5" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-slate-900">Donor</h3>
+                <p className="text-xs leading-relaxed font-medium text-slate-500">
+                  Restaurants, Hotels, Bakeries, Catering Services, and Individuals can list surplus food in seconds. Track tax credits and sustainability reports.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#0f172a' }}>Donor</h3>
-              <p className="text-xs leading-relaxed font-medium" style={{ color: '#64748b' }}>
-                Restaurants, Hotels, Bakeries, Catering Services, and Individuals can list surplus food in seconds. Track tax credits and sustainability reports.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 mt-6">
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/login/donor" className="w-full">
-                  <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
-                </Link>
-                <Button onClick={() => handleDemoLogin('Donor', '/dashboard/donor')} variant="outline" className="w-full border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+              <div className="flex flex-col gap-3 mt-6">
+                <div className="grid grid-cols-2 gap-2">
+                  <Magnetic range={25} strength={0.3}>
+                    <Link href="/login/donor" className="w-full block">
+                      <Button className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
+                    </Link>
+                  </Magnetic>
+                  <Magnetic range={25} strength={0.3}>
+                    <Button onClick={() => handleDemoLogin('Donor', '/dashboard/donor')} variant="outline" className="w-full border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+                  </Magnetic>
+                </div>
+                <Link href="/register?role=Donor" className="text-center text-[10px] font-bold uppercase tracking-wider py-1 transition-colors text-slate-400 hover:text-emerald-500">Register as Donor</Link>
               </div>
-              <Link href="/register?role=Donor" className="text-center text-[10px] font-bold uppercase tracking-wider py-1 transition-colors" style={{ color: '#94a3b8' }}>Register as Donor</Link>
-            </div>
-          </div>
+            </motion.div>
+          </TiltCard>
 
           {/* Card 2: NGO */}
-          <div
-            onMouseEnter={() => setHoveredPortal('ngo')}
-            onMouseLeave={() => setHoveredPortal(null)}
-            className="rounded-[32px] p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group"
-            style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
-          >
-            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'ngo' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(14,165,233,0.12)' }} />
-            <div>
-              <div className="p-3.5 bg-sky-500/10 border border-sky-500/20 rounded-2xl w-fit mb-6 text-sky-600">
-                <Heart className="w-5 h-5" />
+          <TiltCard className="h-full">
+            <motion.div
+              variants={cardFadeUp}
+              onMouseEnter={() => setHoveredPortal('ngo')}
+              onMouseLeave={() => setHoveredPortal(null)}
+              className="p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group premium-card cursor-pointer select-none"
+            >
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'ngo' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(14,165,233,0.12)' }} />
+              <div>
+                <div className="p-3.5 bg-sky-500/10 border border-sky-500/20 rounded-2xl w-fit mb-6 text-sky-600 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                  <Heart className="w-5 h-5" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-slate-900">NGO</h3>
+                <p className="text-xs leading-relaxed font-medium text-slate-500">
+                  Browse nearby donations, accept requests, and coordinate pickups. Efficiently manage inventory and log distributions.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#0f172a' }}>NGO</h3>
-              <p className="text-xs leading-relaxed font-medium" style={{ color: '#64748b' }}>
-                Browse nearby donations, accept requests, and coordinate pickups. Efficiently manage inventory and log distributions.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 mt-6">
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/login/ngo" className="w-full">
-                  <Button className="w-full bg-sky-500 hover:bg-sky-400 text-white font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
-                </Link>
-                <Button onClick={() => handleDemoLogin('NGO', '/dashboard/ngo')} variant="outline" className="w-full border-sky-500/30 hover:bg-sky-500/10 text-sky-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+              <div className="flex flex-col gap-3 mt-6">
+                <div className="grid grid-cols-2 gap-2">
+                  <Magnetic range={25} strength={0.3}>
+                    <Link href="/login/ngo" className="w-full block">
+                      <Button className="w-full bg-sky-500 hover:bg-sky-400 text-white font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
+                    </Link>
+                  </Magnetic>
+                  <Magnetic range={25} strength={0.3}>
+                    <Button onClick={() => handleDemoLogin('NGO', '/dashboard/ngo')} variant="outline" className="w-full border-sky-500/30 hover:bg-sky-500/10 text-sky-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+                  </Magnetic>
+                </div>
+                <Link href="/register?role=NGO" className="text-center text-[10px] font-bold uppercase tracking-wider py-1 transition-colors text-slate-400 hover:text-sky-500">Register an NGO</Link>
               </div>
-              <Link href="/register?role=NGO" className="text-center text-[10px] font-bold uppercase tracking-wider py-1 transition-colors" style={{ color: '#94a3b8' }}>Register an NGO</Link>
-            </div>
-          </div>
+            </motion.div>
+          </TiltCard>
 
           {/* Card 3: Volunteer */}
-          <div
-            onMouseEnter={() => setHoveredPortal('volunteer')}
-            onMouseLeave={() => setHoveredPortal(null)}
-            className="rounded-[32px] p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group"
-            style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
-          >
-            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'volunteer' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(245,158,11,0.12)' }} />
-            <div>
-              <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-fit mb-6 text-amber-600">
-                <Truck className="w-5 h-5" />
+          <TiltCard className="h-full">
+            <motion.div
+              variants={cardFadeUp}
+              onMouseEnter={() => setHoveredPortal('volunteer')}
+              onMouseLeave={() => setHoveredPortal(null)}
+              className="p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group premium-card cursor-pointer select-none"
+            >
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'volunteer' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(245,158,11,0.12)' }} />
+              <div>
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-fit mb-6 text-amber-600 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-slate-900">Volunteer</h3>
+                <p className="text-xs leading-relaxed font-medium text-slate-500">
+                  Receive route-optimized pick-up requests. Navigate efficiently between donors and NGOs, earn community rewards, and log carbon-offset miles.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#0f172a' }}>Volunteer</h3>
-              <p className="text-xs leading-relaxed font-medium" style={{ color: '#64748b' }}>
-                Receive route-optimized pick-up requests. Navigate efficiently between donors and NGOs, earn community rewards, and log carbon-offset miles.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 mt-6">
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/login/volunteer" className="w-full">
-                  <Button className="w-full bg-amber-500 hover:bg-amber-400 text-white font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
-                </Link>
-                <Button onClick={() => handleDemoLogin('Volunteer', '/dashboard/volunteer')} variant="outline" className="w-full border-amber-500/30 hover:bg-amber-500/10 text-amber-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+              <div className="flex flex-col gap-3 mt-6">
+                <div className="grid grid-cols-2 gap-2">
+                  <Magnetic range={25} strength={0.3}>
+                    <Link href="/login/volunteer" className="w-full block">
+                      <Button className="w-full bg-amber-500 hover:bg-amber-400 text-white font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
+                    </Link>
+                  </Magnetic>
+                  <Magnetic range={25} strength={0.3}>
+                    <Button onClick={() => handleDemoLogin('Volunteer', '/dashboard/volunteer')} variant="outline" className="w-full border-amber-500/30 hover:bg-amber-500/10 text-amber-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+                  </Magnetic>
+                </div>
+                <Link href="/register?role=Volunteer" className="text-center text-[10px] font-bold uppercase tracking-wider py-1 transition-colors text-slate-400 hover:text-amber-500">Join as Volunteer</Link>
               </div>
-              <Link href="/register?role=Volunteer" className="text-center text-[10px] font-bold uppercase tracking-wider py-1 transition-colors" style={{ color: '#94a3b8' }}>Join as Volunteer</Link>
-            </div>
-          </div>
+            </motion.div>
+          </TiltCard>
 
           {/* Card 4: Admin */}
-          <div
-            onMouseEnter={() => setHoveredPortal('admin')}
-            onMouseLeave={() => setHoveredPortal(null)}
-            className="rounded-[32px] p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group"
-            style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 32px rgba(15,23,42,0.07)' }}
-          >
-            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'admin' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(139,92,246,0.12)' }} />
-            <div>
-              <div className="p-3.5 bg-violet-500/10 border border-violet-500/20 rounded-2xl w-fit mb-6 text-violet-600">
-                <ShieldCheck className="w-5 h-5" />
+          <TiltCard className="h-full">
+            <motion.div
+              variants={cardFadeUp}
+              onMouseEnter={() => setHoveredPortal('admin')}
+              onMouseLeave={() => setHoveredPortal(null)}
+              className="p-8 flex flex-col justify-between h-[380px] relative overflow-hidden group premium-card cursor-pointer select-none"
+            >
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 ${hoveredPortal === 'admin' ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: 'rgba(139,92,246,0.12)' }} />
+              <div>
+                <div className="p-3.5 bg-violet-500/10 border border-violet-500/20 rounded-2xl w-fit mb-6 text-violet-600 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-slate-900">Admin</h3>
+                <p className="text-xs leading-relaxed font-medium text-slate-500">
+                  Internal dashboard for system monitoring, organization verification, global analytics, system performance tuning, and conflict resolution.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold mb-2" style={{ color: '#0f172a' }}>Admin</h3>
-              <p className="text-xs leading-relaxed font-medium" style={{ color: '#64748b' }}>
-                Internal dashboard for system monitoring, organization verification, global analytics, system performance tuning, and conflict resolution.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 mt-6">
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/login/admin" className="w-full">
-                  <Button variant="outline" className="w-full border-slate-300 hover:bg-slate-100 text-slate-600 font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
-                </Link>
-                <Button onClick={() => handleDemoLogin('Admin', '/dashboard/admin')} variant="outline" className="w-full border-violet-500/30 hover:bg-violet-500/10 text-violet-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+              <div className="flex flex-col gap-3 mt-6">
+                <div className="grid grid-cols-2 gap-2">
+                  <Magnetic range={25} strength={0.3}>
+                    <Link href="/login/admin" className="w-full block">
+                      <Button variant="outline" className="w-full border-slate-300 hover:bg-slate-100 text-slate-600 font-extrabold py-2 rounded-xl text-[10px] h-9 tracking-wider uppercase">Login</Button>
+                    </Link>
+                  </Magnetic>
+                  <Magnetic range={25} strength={0.3}>
+                    <Button onClick={() => handleDemoLogin('Admin', '/dashboard/admin')} variant="outline" className="w-full border-violet-500/30 hover:bg-violet-500/10 text-violet-600 font-bold py-2 rounded-xl text-[10px] h-9">Demo</Button>
+                  </Magnetic>
+                </div>
+                <div className="text-center text-transparent text-[10px] py-1 select-none">Placeholder</div>
               </div>
-              <div className="text-center text-transparent text-[10px] py-1 select-none">Placeholder</div>
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          </TiltCard>
+        </motion.div>
       </motion.section>
 
       {/* --- 7. Features Section --- */}
@@ -1222,20 +1391,28 @@ export default function LandingPage() {
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="py-32 relative z-10 scroll-mt-28"
-        style={{ backgroundColor: 'rgba(255,255,255,0.45)', borderTop: '1px solid rgba(15,23,42,0.07)' }}
+        style={{ backgroundColor: 'transparent', borderTop: '1px solid rgba(15,23,42,0.07)' }}
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">Platform Capabilities</h2>
-            <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95]" style={{ color: '#0f172a' }}>
-              State-of-the-Art Operations Infrastructure
+            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">
+              <TextReveal text="Platform Capabilities" />
+            </h2>
+            <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95] text-slate-800">
+              <TextReveal text="State-of-the-Art Operations Infrastructure" />
             </p>
-            <p className="mt-5 leading-relaxed font-medium text-base" style={{ color: '#64748b' }}>
-              Advanced technologies driving efficiency and transparency across our food rescue network.
+            <p className="mt-5 leading-relaxed font-medium text-base text-slate-500">
+              <TextReveal text="Advanced technologies driving efficiency and transparency across our food rescue network." />
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
             {[
               { icon: <Sparkles className="w-5 h-5" />, color: '#10b981', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.20)', title: 'AI Food Recognition', desc: 'Computer vision quality checks estimate volume, assess freshness, and predict shelf life from food photos.' },
               { icon: <Users className="w-5 h-5" />, color: '#0ea5e9', bg: 'rgba(14,165,233,0.10)', border: 'rgba(14,165,233,0.20)', title: 'Smart NGO Matching', desc: 'Algorithmically matches listings based on location, storage capacity, dietary focus, and urgency.' },
@@ -1244,20 +1421,20 @@ export default function LandingPage() {
               { icon: <Activity className="w-5 h-5" />, color: '#ec4899', bg: 'rgba(236,72,153,0.10)', border: 'rgba(236,72,153,0.20)', title: 'Live Tracking', desc: 'Real-time tracking of active shipments on our live map keeps donors, volunteers, and NGOs aligned.' },
               { icon: <BarChart3 className="w-5 h-5" />, color: '#14b8a6', bg: 'rgba(20,184,166,0.10)', border: 'rgba(20,184,166,0.20)', title: 'Sustainability Reports', desc: 'Export auditable ESG metrics showing CO₂ prevention and landfill diversion numbers for tax benefits.' },
             ].map((feat, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ y: -6 }}
-                className="p-8 rounded-3xl relative overflow-hidden group"
-                style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 28px rgba(15,23,42,0.07)' }}
-              >
-                <div className="p-3 rounded-xl w-fit mb-6" style={{ backgroundColor: feat.bg, border: `1px solid ${feat.border}`, color: feat.color }}>
-                  {feat.icon}
-                </div>
-                <h4 className="text-xl font-bold mb-3" style={{ color: '#0f172a' }}>{feat.title}</h4>
-                <p className="text-xs leading-relaxed font-medium" style={{ color: '#64748b' }}>{feat.desc}</p>
-              </motion.div>
+              <TiltCard key={i} className="h-full">
+                <motion.div
+                  variants={cardFadeUp}
+                  className="p-8 premium-card relative overflow-hidden group select-none cursor-pointer h-full"
+                >
+                  <div className="p-3 rounded-xl w-fit mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6" style={{ backgroundColor: feat.bg, border: `1px solid ${feat.border}`, color: feat.color }}>
+                    {feat.icon}
+                  </div>
+                  <h4 className="text-xl font-bold mb-3 text-slate-900">{feat.title}</h4>
+                  <p className="text-xs leading-relaxed font-medium text-slate-500">{feat.desc}</p>
+                </motion.div>
+              </TiltCard>
             ))}
-          </div>
+          </motion.div>
         </div>
       </motion.section>
 
@@ -1273,100 +1450,128 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">Testimonials</h2>
-            <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95]" style={{ color: '#0f172a' }}>
-              Trusted by the Network
+            <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">
+              <TextReveal text="Testimonials" />
+            </h2>
+            <p className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase leading-[0.95] text-slate-800">
+              <TextReveal text="Trusted by the Network" />
             </p>
-            <p className="mt-5 leading-relaxed font-medium text-base" style={{ color: '#64748b' }}>
-              Read how FoodShare AI has transformed operations for businesses, charities, and volunteers.
+            <p className="mt-5 leading-relaxed font-medium text-base text-slate-500">
+              <TextReveal text="Read how FoodShare AI has transformed operations for businesses, charities, and volunteers." />
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            className="grid grid-cols-1 md:grid-cols-4 gap-6"
+          >
             {/* Testimonial 1 */}
-            <div className="p-7 rounded-[24px] flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 28px rgba(15,23,42,0.07)' }}>
-              <div className="space-y-5">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
-                  ))}
+            <TiltCard className="h-full">
+              <motion.div
+                variants={cardFadeUp}
+                className="p-7 premium-card flex flex-col justify-between relative overflow-hidden select-none cursor-pointer h-full"
+              >
+                <div className="space-y-5">
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
+                    ))}
+                  </div>
+                  <p className="text-xs leading-relaxed italic font-medium text-slate-600">
+                    "Pehle khana waste karna bahut bura lagta tha. FoodShare AI ki wajah se ab hamare restaurant ka bacha hua khana seedha zaruratkshon tak pahunchta hai — bilkul sahi waqt par."
+                  </p>
                 </div>
-                <p className="text-xs leading-relaxed italic font-medium" style={{ color: '#475569' }}>
-                  "Before FoodShare AI, donating surplus food required hours of phone calls. Now, our kitchen staff lists items in seconds, and they are picked up within the hour."
-                </p>
-              </div>
-              <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#e2e8f0', color: '#0f172a' }}>MA</div>
-                <div>
-                  <h5 className="text-xs font-bold" style={{ color: '#0f172a' }}>Marcus Aurelius</h5>
-                  <p className="text-[10px] font-semibold" style={{ color: '#94a3b8' }}>Owner, The Hearth Bakery</p>
+                <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>RG</div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-800">Rajesh Gupta</h5>
+                    <p className="text-[10px] font-semibold text-slate-400">Owner, Gupta Dhaba, Delhi</p>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </TiltCard>
 
             {/* Testimonial 2 */}
-            <div className="p-7 rounded-[24px] flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 28px rgba(15,23,42,0.07)' }}>
-              <div className="space-y-5">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
-                  ))}
+            <TiltCard className="h-full">
+              <motion.div
+                variants={cardFadeUp}
+                className="p-7 premium-card flex flex-col justify-between relative overflow-hidden select-none cursor-pointer h-full"
+              >
+                <div className="space-y-5">
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
+                    ))}
+                  </div>
+                  <p className="text-xs leading-relaxed italic font-medium text-slate-600">
+                    "Our NGO serves over 300 children daily in Bengaluru. FoodShare AI's smart matching ensures we get meals that suit our dietary needs — no calls, no delays, just timely nutrition."
+                  </p>
                 </div>
-                <p className="text-xs leading-relaxed italic font-medium" style={{ color: '#475569' }}>
-                  "The matching algorithm is incredible. It filters donations based on our cold storage capacity and dietary guidelines, ensuring zero food goes to waste at our shelter."
-                </p>
-              </div>
-              <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#e2e8f0', color: '#0f172a' }}>SC</div>
-                <div>
-                  <h5 className="text-xs font-bold" style={{ color: '#0f172a' }}>Sarah Connor</h5>
-                  <p className="text-[10px] font-semibold" style={{ color: '#94a3b8' }}>Director, Hope Food Bank</p>
+                <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: '#d1fae5', color: '#065f46' }}>PS</div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-800">Priya Subramaniam</h5>
+                    <p className="text-[10px] font-semibold text-slate-400">Director, Asha Bal Seva, Bengaluru</p>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </TiltCard>
 
             {/* Testimonial 3 */}
-            <div className="p-7 rounded-[24px] flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 28px rgba(15,23,42,0.07)' }}>
-              <div className="space-y-5">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
-                  ))}
+            <TiltCard className="h-full">
+              <motion.div
+                variants={cardFadeUp}
+                className="p-7 premium-card flex flex-col justify-between relative overflow-hidden select-none cursor-pointer h-full"
+              >
+                <div className="space-y-5">
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
+                    ))}
+                  </div>
+                  <p className="text-xs leading-relaxed italic font-medium text-slate-600">
+                    "Main ek delivery volunteer hoon Mumbai mein. Route optimization ne meri cycle delivery trips ko teen se ghatakar ek kar diya — aur fir bhi zyada ghar pahuncha."
+                  </p>
                 </div>
-                <p className="text-xs leading-relaxed italic font-medium" style={{ color: '#475569' }}>
-                  "I love the optimized routing. I can complete three deliveries in my neighborhood on my bike during my lunch break, knowing exactly where to go and who to contact."
-                </p>
-              </div>
-              <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#e2e8f0', color: '#0f172a' }}>DK</div>
-                <div>
-                  <h5 className="text-xs font-bold" style={{ color: '#0f172a' }}>David Kim</h5>
-                  <p className="text-[10px] font-semibold" style={{ color: '#94a3b8' }}>Rescue Volunteer</p>
+                <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>AK</div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-800">Arjun Kulkarni</h5>
+                    <p className="text-[10px] font-semibold text-slate-400">Food Rescue Volunteer, Mumbai</p>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </TiltCard>
 
             {/* Testimonial 4 */}
-            <div className="p-7 rounded-[24px] flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 8px 28px rgba(15,23,42,0.07)' }}>
-              <div className="space-y-5">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
-                  ))}
+            <TiltCard className="h-full">
+              <motion.div
+                variants={cardFadeUp}
+                className="p-7 premium-card flex flex-col justify-between relative overflow-hidden select-none cursor-pointer h-full"
+              >
+                <div className="space-y-5">
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
+                    ))}
+                  </div>
+                  <p className="text-xs leading-relaxed italic font-medium text-slate-600">
+                    "As a wedding caterer in Hyderabad, post-event wastage was a guilt we carried. Now with FoodShare AI, leftover food reaches shelters within 90 minutes. It's truly seva made easy."
+                  </p>
                 </div>
-                <p className="text-xs leading-relaxed italic font-medium" style={{ color: '#475569' }}>
-                  "Exporting verified ESG reports directly from FoodShare AI has simplified our corporate sustainability reporting. We have clear, auditable carbon offset numbers."
-                </p>
-              </div>
-              <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#e2e8f0', color: '#0f172a' }}>EL</div>
-                <div>
-                  <h5 className="text-xs font-bold" style={{ color: '#0f172a' }}>Emma Lindqvist</h5>
-                  <p className="text-[10px] font-semibold" style={{ color: '#94a3b8' }}>CSR Director, Atlas Corp</p>
+                <div className="flex items-center gap-3 mt-8 pt-5" style={{ borderTop: '1px solid rgba(15,23,42,0.07)' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: '#ede9fe', color: '#5b21b6' }}>SM</div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-800">Sunita Mehta</h5>
+                    <p className="text-[10px] font-semibold text-slate-400">Founder, Mehta Catering Co., Hyderabad</p>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            </TiltCard>
+          </motion.div>
         </div>
       </motion.section>
 
@@ -1380,13 +1585,21 @@ export default function LandingPage() {
         className="py-32 max-w-3xl mx-auto px-6 relative z-10 scroll-mt-28"
       >
         <div className="text-center mb-20">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">FAQ</h2>
-          <p className="text-4xl font-extrabold tracking-tight uppercase leading-[0.95]" style={{ color: '#0f172a' }}>
-            Frequently Asked Questions
+          <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-4">
+            <TextReveal text="FAQ" />
+          </h2>
+          <p className="text-4xl font-extrabold tracking-tight uppercase leading-[0.95] text-slate-800">
+            <TextReveal text="Frequently Asked Questions" />
           </p>
         </div>
 
-        <div className="space-y-4">
+        <motion.div 
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          className="space-y-4"
+        >
           {[
             { q: "How do food donations work?", a: "Donors list surplus food on their portal, detailing item types, weight, and expiry. The system verifies these details using AI, matches it with nearby eligible NGOs, and alerts local volunteers to coordinate the pick-up and delivery." },
             { q: "Is food safety guaranteed?", a: "Yes. All donors must comply with local food safety regulations. During upload, our AI analyzes photos to check freshness, and volunteers verify storage conditions (e.g., thermal bags) at pickup. NGOs verify quality upon receipt." },
@@ -1397,19 +1610,18 @@ export default function LandingPage() {
           ].map((item, idx) => {
             const isOpen = activeFaq === idx;
             return (
-              <div
+              <motion.div
                 key={idx}
-                className="rounded-[20px] overflow-hidden transition-all duration-300"
+                variants={cardFadeUp}
+                className="rounded-[20px] overflow-hidden transition-all duration-300 premium-card"
                 style={{
-                  backgroundColor: 'rgba(255,255,255,0.80)',
                   border: isOpen ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(15,23,42,0.08)',
-                  boxShadow: '0 4px 16px rgba(15,23,42,0.06)',
+                  boxShadow: isOpen ? '0 8px 24px rgba(16,185,129,0.08)' : '0 4px 16px rgba(15,23,42,0.06)',
                 }}
               >
                 <button
                   onClick={() => setActiveFaq(isOpen ? null : idx)}
-                  className="w-full py-5 px-6 flex justify-between items-center text-left font-bold transition-all text-sm cursor-pointer"
-                  style={{ color: '#0f172a' }}
+                  className="w-full py-5 px-6 flex justify-between items-center text-left font-bold transition-all text-sm cursor-pointer text-slate-800 hover:text-emerald-600"
                 >
                   <span>{item.q}</span>
                   <ChevronDown
@@ -1420,21 +1632,21 @@ export default function LandingPage() {
                 <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: "auto" }}
-                      exit={{ height: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     >
-                      <div className="px-6 pb-5 text-xs leading-relaxed pt-3" style={{ color: '#64748b', borderTop: '1px solid rgba(15,23,42,0.07)', backgroundColor: 'rgba(241,245,249,0.50)' }}>
+                      <div className="px-6 pb-5 text-xs leading-relaxed pt-3 text-slate-500" style={{ borderTop: '1px solid rgba(15,23,42,0.07)', backgroundColor: 'rgba(241,245,249,0.50)' }}>
                         {item.a}
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </motion.section>
 
       {/* --- 10. Final CTA Section --- */}
@@ -1474,26 +1686,46 @@ export default function LandingPage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: 'rgba(16,185,129,0.06)' }} />
 
           <div className="relative z-10 max-w-3xl mx-auto space-y-8">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">JOIN THE MISSION</span>
-            <h3 className="text-4xl sm:text-6xl font-extrabold tracking-tight uppercase leading-[0.95]" style={{ color: '#0f172a' }}>Ready to Reduce Waste?</h3>
-            <p className="text-sm sm:text-base leading-relaxed max-w-xl mx-auto font-medium" style={{ color: '#64748b' }}>
-              Choose your path today. Whether you list surplus food, coordinate logistics, or distribute meals, your contribution accelerates global sustainability.
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">
+              <TextReveal text="JOIN THE MISSION" />
+            </span>
+            <h3 className="text-4xl sm:text-6xl font-extrabold tracking-tight uppercase leading-[0.95] text-slate-800">
+              <TextReveal text="Ready to Reduce Waste?" />
+            </h3>
+            <p className="text-sm sm:text-base leading-relaxed max-w-xl mx-auto font-medium text-slate-500">
+              <TextReveal text="Choose your path today. Whether you list surplus food, coordinate logistics, or distribute meals, your contribution accelerates global sustainability." />
             </p>
 
             {/* Desktop */}
             <div className="hidden lg:flex flex-row justify-center items-center gap-4 pt-8">
-              <motion.div whileHover={{ y: -3 }}><Link href="/register?role=donor" className="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Become a Donor</Link></motion.div>
-              <motion.div whileHover={{ y: -3 }}><Link href="/register?role=ngo" className="inline-flex items-center justify-center bg-sky-500 hover:bg-sky-400 text-white font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Register an NGO</Link></motion.div>
-              <motion.div whileHover={{ y: -3 }}><Link href="/register?role=volunteer" className="inline-flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-white font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Join as Volunteer</Link></motion.div>
-              <motion.div whileHover={{ y: -3 }}><Link href="/contact" className="inline-flex items-center justify-center font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase transition-all duration-300 cursor-pointer select-none" style={{ border: '1.5px solid rgba(15,23,42,0.15)', color: '#0f172a', backgroundColor: 'rgba(15,23,42,0.04)' }}>Contact Team</Link></motion.div>
+              <Magnetic range={35} strength={0.25}>
+                <motion.div whileHover={{ y: -3 }}><Link href="/register?role=donor" className="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Become a Donor</Link></motion.div>
+              </Magnetic>
+              <Magnetic range={35} strength={0.25}>
+                <motion.div whileHover={{ y: -3 }}><Link href="/register?role=ngo" className="inline-flex items-center justify-center bg-sky-500 hover:bg-sky-400 text-white font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Register an NGO</Link></motion.div>
+              </Magnetic>
+              <Magnetic range={35} strength={0.25}>
+                <motion.div whileHover={{ y: -3 }}><Link href="/register?role=volunteer" className="inline-flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-white font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Join as Volunteer</Link></motion.div>
+              </Magnetic>
+              <Magnetic range={35} strength={0.25}>
+                <motion.div whileHover={{ y: -3 }}><Link href="/contact" className="inline-flex items-center justify-center font-extrabold px-7 py-4 rounded-2xl text-xs tracking-wider uppercase transition-all duration-300 cursor-pointer select-none" style={{ border: '1.5px solid rgba(15,23,42,0.15)', color: '#0f172a', backgroundColor: 'rgba(15,23,42,0.04)' }}>Contact Team</Link></motion.div>
+              </Magnetic>
             </div>
 
             {/* Tablet */}
             <div className="hidden md:flex lg:hidden flex-col items-center gap-4 max-w-xs mx-auto pt-8">
-              <Link href="/register?role=donor" className="w-full text-center inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Become a Donor</Link>
-              <Link href="/register?role=ngo" className="w-full text-center inline-flex items-center justify-center bg-sky-500 hover:bg-sky-400 text-white font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Register an NGO</Link>
-              <Link href="/register?role=volunteer" className="w-full text-center inline-flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-white font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Join as Volunteer</Link>
-              <Link href="/contact" className="w-full text-center inline-flex items-center justify-center font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase transition-all duration-300 cursor-pointer select-none" style={{ border: '1.5px solid rgba(15,23,42,0.15)', color: '#0f172a' }}>Contact Team</Link>
+              <Magnetic range={30} strength={0.2}>
+                <Link href="/register?role=donor" className="w-full text-center inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Become a Donor</Link>
+              </Magnetic>
+              <Magnetic range={30} strength={0.2}>
+                <Link href="/register?role=ngo" className="w-full text-center inline-flex items-center justify-center bg-sky-500 hover:bg-sky-400 text-white font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Register an NGO</Link>
+              </Magnetic>
+              <Magnetic range={30} strength={0.2}>
+                <Link href="/register?role=volunteer" className="w-full text-center inline-flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-white font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase shadow-lg transition-all duration-300 cursor-pointer select-none">Join as Volunteer</Link>
+              </Magnetic>
+              <Magnetic range={30} strength={0.2}>
+                <Link href="/contact" className="w-full text-center inline-flex items-center justify-center font-extrabold py-4 rounded-2xl text-xs tracking-wider uppercase transition-all duration-300 cursor-pointer select-none" style={{ border: '1.5px solid rgba(15,23,42,0.15)', color: '#0f172a' }}>Contact Team</Link>
+              </Magnetic>
             </div>
 
             {/* Mobile */}
@@ -1524,7 +1756,7 @@ export default function LandingPage() {
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
         className="py-20 relative z-10"
-        style={{ backgroundColor: 'rgba(255,248,242,0.95)', borderTop: '1px solid rgba(15,23,42,0.08)' }}
+        style={{ backgroundColor: 'transparent', borderTop: '1px solid rgba(15,23,42,0.08)' }}
       >
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-6 gap-12">
 

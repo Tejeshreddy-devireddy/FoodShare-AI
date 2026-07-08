@@ -2,32 +2,106 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard, ClipboardList, Navigation, ShieldCheck, PackageCheck,
+  Camera, Route, Trophy, History, Settings, LogOut
+} from 'lucide-react';
+
+const navLinks = [
+  { href: '/dashboard/volunteer', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/volunteer/assigned', label: 'Assigned Pickups', icon: ClipboardList },
+  { href: '/dashboard/volunteer/navigation', label: 'Live Navigation', icon: Navigation },
+  { href: '/dashboard/volunteer/verify', label: 'Pickup Verification', icon: ShieldCheck },
+  { href: '/dashboard/volunteer/deliveries', label: 'Delivery Confirmation', icon: PackageCheck },
+  { href: '/dashboard/volunteer/proof', label: 'Upload Proof', icon: Camera },
+  { href: '/dashboard/volunteer/route', label: 'Route Optimization', icon: Route },
+  { href: '/dashboard/volunteer/rewards', label: 'Rewards & Badges', icon: Trophy },
+  { href: '/dashboard/volunteer/history', label: 'Activity History', icon: History },
+  { href: '/dashboard/volunteer/settings', label: 'Profile & Settings', icon: Settings },
+];
+
+const ACCENT = { color: '#d97706', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.20)', glow: 'rgba(245,158,11,0.05)' };
 
 function Sidebar() {
+  const pathname = usePathname();
   return (
-    <aside className="w-64 bg-zinc-950 border-r border-zinc-900 p-4 min-h-screen">
-      <div className="mb-6 font-bold text-white">Volunteer</div>
-      <nav className="flex flex-col gap-2 text-sm text-zinc-300">
-        <Link href="/dashboard/volunteer">Overview</Link>
-        <Link href="/dashboard/volunteer/assigned">Assigned Pickups</Link>
-        <Link href="/dashboard/volunteer/navigation">Live Navigation</Link>
-        <Link href="/dashboard/volunteer/verify">Pickup Verification</Link>
-        <Link href="/dashboard/volunteer/deliveries">Delivery Confirmation</Link>
-        <Link href="/dashboard/volunteer/proof">Upload Proof</Link>
-        <Link href="/dashboard/volunteer/route">Route Optimization</Link>
-        <Link href="/dashboard/volunteer/rewards">Rewards & Badges</Link>
-        <Link href="/dashboard/volunteer/history">Activity History</Link>
-        <Link href="/dashboard/volunteer/settings">Profile & Settings</Link>
+    <aside
+      className="w-64 min-h-screen flex flex-col"
+      style={{
+        backgroundColor: 'rgba(255, 252, 249, 0.90)',
+        borderRight: '1px solid rgba(15,23,42,0.08)',
+        backdropFilter: 'blur(16px)',
+      }}
+    >
+      {/* Logo */}
+      <div className="px-5 py-5 border-b" style={{ borderColor: 'rgba(15,23,42,0.07)' }}>
+        <Link href="/" className="flex items-center gap-2 font-extrabold text-base" style={{ color: '#0f172a' }}>
+          <img src="/logo.png" className="w-8 h-8 rounded-lg object-cover" style={{ border: '1px solid rgba(15,23,42,0.10)' }} alt="Logo" />
+          <span>
+            FoodShare{' '}
+            <span className="bg-clip-text text-transparent font-black" style={{ backgroundImage: 'linear-gradient(135deg, #10b981, #0ea5e9)' }}>AI</span>
+          </span>
+        </Link>
+        <div className="mt-3">
+          <span
+            className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: ACCENT.bg, color: ACCENT.color, border: `1px solid ${ACCENT.border}` }}
+          >
+            Volunteer
+          </span>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        {navLinks.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200"
+              style={{
+                backgroundColor: isActive ? ACCENT.bg : 'transparent',
+                color: isActive ? ACCENT.color : '#475569',
+                fontWeight: isActive ? '600' : '500',
+              }}
+              onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'rgba(15,23,42,0.04)'; (e.currentTarget as HTMLAnchorElement).style.color = '#0f172a'; } }}
+              onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = '#475569'; } }}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              {label}
+            </Link>
+          );
+        })}
       </nav>
+
+      {/* Footer */}
+      <div className="px-3 py-4 border-t" style={{ borderColor: 'rgba(15,23,42,0.07)' }}>
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+          style={{ color: '#94a3b8' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#0f172a'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#94a3b8'; }}
+        >
+          <LogOut className="w-4 h-4" />
+          Back to Home
+        </Link>
+      </div>
     </aside>
   );
 }
 
 export default function VolunteerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#030303] text-white flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: '#FFF5EE', color: '#0f172a' }}>
+      {/* Volumetric background lights */}
+      <div className="fixed top-[-15%] left-[10%] rounded-full pointer-events-none z-0" style={{ width: '600px', height: '600px', backgroundColor: ACCENT.glow, filter: 'blur(160px)' }} />
+      <div className="fixed top-[25%] right-[-10%] rounded-full pointer-events-none z-0" style={{ width: '500px', height: '500px', backgroundColor: 'rgba(16,185,129,0.04)', filter: 'blur(140px)' }} />
       <Sidebar />
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6 z-10 relative">{children}</main>
     </div>
   );
 }

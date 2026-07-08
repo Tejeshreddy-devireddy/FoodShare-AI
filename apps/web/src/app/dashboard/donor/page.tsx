@@ -15,8 +15,8 @@ export default function DonorDashboard() {
   return (
     <div className="space-y-8" id="donor-dashboard-root">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Donor Command Center</h1>
-        <p className="text-zinc-400 text-sm mt-1">Publish surplus food, review AI quality scores, and inspect sustainability badges.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#0f172a' }}>Donor Command Center</h1>
+        <p className="text-sm mt-1" style={{ color: '#64748b' }}>Publish surplus food, review AI quality scores, and inspect sustainability badges.</p>
       </div>
 
       {/* Extracted Stats Feature */}

@@ -131,11 +131,11 @@ export function DonationForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleDonationSubmit} className="space-y-6" id="donation-form">
-            {message && <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs">{message}</div>}
-            {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs">{error}</div>}
+            {message && <div className="p-3 rounded-xl text-xs" style={{ backgroundColor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)', color: '#059669' }}>{message}</div>}
+            {error && <div className="p-3 rounded-xl text-xs" style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', color: '#dc2626' }}>{error}</div>}
 
             <div className="space-y-4">
-              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Food Items List</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>Food Items List</label>
               {foodItems.map((item, idx) => (
                 <div key={idx} className="flex gap-2 items-center">
                   <Input
@@ -228,15 +228,15 @@ export function DonationForm() {
           <CardDescription>Upload a package photo to evaluate freshness and predicted shelf-life instantly.</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col justify-center space-y-6">
-          <div className="border-2 border-dashed border-zinc-800 rounded-2xl p-8 text-center bg-zinc-900/10 hover:border-emerald-500/40 transition-colors relative flex flex-col items-center">
+          <div className="border-2 border-dashed rounded-2xl p-8 text-center hover:border-emerald-400/50 transition-colors relative flex flex-col items-center" style={{ borderColor: 'rgba(15,23,42,0.15)', backgroundColor: 'rgba(255,255,255,0.50)' }}>
             {image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={image} alt="Upload preview" className="max-h-48 rounded-xl object-contain shadow-lg" />
             ) : (
               <>
                 <ImageIcon className="w-12 h-12 text-zinc-600 mb-4" />
-                <p className="text-sm font-semibold text-zinc-300">Upload Food Packing Image</p>
-                <p className="text-xs text-zinc-500 mt-1">Supports PNG, JPG up to 5MB</p>
+                <p className="text-sm font-semibold" style={{ color: '#475569' }}>Upload Food Packing Image</p>
+                <p className="text-xs mt-1" style={{ color: '#94a3b8' }}>Supports PNG, JPG up to 5MB</p>
               </>
             )}
             <input
@@ -250,9 +250,9 @@ export function DonationForm() {
 
           {isScanning && (
             <div className="space-y-3 animate-pulse">
-              <div className="h-4 bg-zinc-800 rounded-md w-3/4" />
-              <div className="h-4 bg-zinc-800 rounded-md w-1/2" />
-              <div className="h-3 bg-zinc-900 rounded-md w-5/6" />
+              <div className="h-4 rounded-md w-3/4" style={{ backgroundColor: 'rgba(15,23,42,0.08)' }} />
+              <div className="h-4 rounded-md w-1/2" style={{ backgroundColor: 'rgba(15,23,42,0.08)' }} />
+              <div className="h-3 rounded-md w-5/6" style={{ backgroundColor: 'rgba(15,23,42,0.06)' }} />
             </div>
           )}
 
@@ -269,14 +269,14 @@ export function DonationForm() {
                 </div>
               </div>
 
-              <div className="p-3.5 bg-zinc-950/80 border border-zinc-900 rounded-xl">
+              <div className="p-3.5 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.80)', border: '1px solid rgba(15,23,42,0.10)' }}>
                 <span className="text-[10px] text-zinc-500 block uppercase font-mono">Estimated Shelf Life</span>
-                <span className="text-lg font-bold text-white">{aiResult.predicted_shelf_life_hours} Hours</span>
+                <span className="text-lg font-bold" style={{ color: '#0f172a' }}>{aiResult.predicted_shelf_life_hours} Hours</span>
               </div>
 
               <div className="space-y-2">
                 <span className="text-[10px] text-zinc-500 block uppercase font-mono">Visual Insights</span>
-                <ul className="text-xs text-zinc-300 space-y-1.5 list-disc pl-4">
+                <ul className="text-xs space-y-1.5 list-disc pl-4" style={{ color: '#475569' }}>
                   {aiResult.insights?.map((ins: string, i: number) => (
                     <li key={i}>{ins}</li>
                   ))}

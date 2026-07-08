@@ -3,10 +3,81 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ShieldAlert, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input, Select } from '@/components/ui/input';
+import { ShieldAlert, Sparkles, ArrowLeft } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
+
+// Light-themed input component matching landing page aesthetics
+function LightInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+  return (
+    <div className="w-full space-y-1.5">
+      {label && (
+        <label className="block text-xs font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>
+          {label}
+        </label>
+      )}
+      <input
+        className="w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 focus:outline-none"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.80)',
+          border: '1px solid rgba(15,23,42,0.12)',
+          color: '#0f172a',
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.border = '1px solid rgba(16,185,129,0.50)';
+          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.10)';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.border = '1px solid rgba(15,23,42,0.12)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        {...props}
+      />
+    </div>
+  );
+}
+
+// Light-themed select component
+function LightSelect({
+  label,
+  options,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & {
+  label?: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="w-full space-y-1.5">
+      {label && (
+        <label className="block text-xs font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>
+          {label}
+        </label>
+      )}
+      <select
+        className="w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 focus:outline-none appearance-none"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.80)',
+          border: '1px solid rgba(15,23,42,0.12)',
+          color: '#0f172a',
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.border = '1px solid rgba(16,185,129,0.50)';
+          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.10)';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.border = '1px solid rgba(15,23,42,0.12)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        {...props}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value} style={{ backgroundColor: '#fff', color: '#0f172a' }}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,7 +112,7 @@ export default function RegisterPage() {
       role,
       location: {
         type: 'Point',
-        coordinates: [77.5946, 12.9716] // Default geo coordinates (e.g. Bangalore center)
+        coordinates: [77.5946, 12.9716]
       }
     };
 
@@ -89,28 +160,63 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 rounded-full blur-[100px]" />
+    <div
+      className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden"
+      style={{ backgroundColor: '#FFF5EE' }}
+    >
+      {/* Volumetric background lights matching landing page */}
+      <div
+        className="absolute top-[-15%] left-[10%] rounded-full pointer-events-none z-0"
+        style={{ width: '600px', height: '600px', backgroundColor: 'rgba(16,185,129,0.07)', filter: 'blur(160px)' }}
+      />
+      <div
+        className="absolute top-[25%] right-[-10%] rounded-full pointer-events-none z-0"
+        style={{ width: '500px', height: '500px', backgroundColor: 'rgba(251,191,36,0.06)', filter: 'blur(140px)' }}
+      />
+      <div
+        className="absolute bottom-[20%] left-[-15%] rounded-full pointer-events-none z-0"
+        style={{ width: '700px', height: '700px', backgroundColor: 'rgba(249,115,22,0.04)', filter: 'blur(180px)' }}
+      />
 
+      {/* Logo & Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center z-10">
-        <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl tracking-tight text-white mb-6">
-          <img src="/logo.png" className="w-14 h-14 rounded-xl border border-zinc-800 object-cover" alt="FoodShare AI Logo" />
-          <span>FoodShare <span className="text-emerald-400">AI</span></span>
+        <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl tracking-tight mb-6" style={{ color: '#0f172a' }}>
+          <img src="/logo.png" className="w-14 h-14 rounded-xl object-cover" style={{ border: '1px solid rgba(15,23,42,0.10)' }} alt="FoodShare AI Logo" />
+          <span>
+            FoodShare{' '}
+            <span
+              className="font-black bg-clip-text text-transparent"
+              style={{ backgroundImage: 'linear-gradient(135deg, #10b981, #0ea5e9)' }}
+            >
+              AI
+            </span>
+          </span>
         </Link>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Create your account</h2>
-        <p className="mt-2 text-sm text-zinc-400">
+        <h2 className="text-3xl font-extrabold tracking-tight" style={{ color: '#0f172a' }}>Create your account</h2>
+        <p className="mt-2 text-sm" style={{ color: '#64748b' }}>
           Already registered?{' '}
-          <Link href="/login" className="font-medium text-emerald-400 hover:text-emerald-300">
+          <Link href="/login" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
             Sign in here
           </Link>
         </p>
       </div>
 
+      {/* Card */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md z-10 px-4">
-        <div className="glass-card py-8 px-10 rounded-2xl shadow-xl border border-zinc-800/80">
-          
+        <div
+          className="py-8 px-10 rounded-2xl"
+          style={{
+            backgroundColor: 'rgba(255, 252, 249, 0.85)',
+            border: '1px solid rgba(15, 23, 42, 0.08)',
+            boxShadow: '0 8px 32px rgba(15,23,42,0.07), 0 1px 4px rgba(0,0,0,0.04)',
+            backdropFilter: 'blur(16px)',
+          }}
+        >
           {error && (
-            <div className="mb-4 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-center gap-2">
+            <div
+              className="mb-4 p-3.5 rounded-xl text-xs flex items-center gap-2"
+              style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', color: '#dc2626' }}
+            >
               <ShieldAlert className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -118,7 +224,7 @@ export default function RegisterPage() {
 
           {!otpSent ? (
             <form className="space-y-4" onSubmit={handleRegisterSubmit} id="register-form">
-              <Input
+              <LightInput
                 label="Full Name / Organization"
                 type="text"
                 placeholder="John Doe"
@@ -128,7 +234,7 @@ export default function RegisterPage() {
                 id="register-name"
               />
 
-              <Input
+              <LightInput
                 label="Email Address"
                 type="email"
                 placeholder="john@example.com"
@@ -138,7 +244,7 @@ export default function RegisterPage() {
                 id="register-email"
               />
 
-              <Input
+              <LightInput
                 label="Password"
                 type="password"
                 placeholder="Minimum 8 characters"
@@ -148,7 +254,7 @@ export default function RegisterPage() {
                 id="register-password"
               />
 
-              <Select
+              <LightSelect
                 label="Account Role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -164,8 +270,11 @@ export default function RegisterPage() {
 
               {/* Conditional Donor Profile */}
               {role === 'Donor' && (
-                <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-xl space-y-3">
-                  <Select
+                <div
+                  className="p-4 rounded-xl space-y-3"
+                  style={{ backgroundColor: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)' }}
+                >
+                  <LightSelect
                     label="Business Category"
                     value={orgType}
                     onChange={(e) => setOrgType(e.target.value)}
@@ -180,7 +289,7 @@ export default function RegisterPage() {
                     ]}
                     id="register-donor-type"
                   />
-                  <Input
+                  <LightInput
                     label="Business License Number"
                     placeholder="LIC-924021"
                     value={license}
@@ -193,8 +302,11 @@ export default function RegisterPage() {
 
               {/* Conditional NGO Profile */}
               {role === 'NGO' && (
-                <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-xl space-y-3">
-                  <Input
+                <div
+                  className="p-4 rounded-xl space-y-3"
+                  style={{ backgroundColor: 'rgba(14,165,233,0.05)', border: '1px solid rgba(14,165,233,0.15)' }}
+                >
+                  <LightInput
                     label="Govt Registration Number"
                     placeholder="NGO-8240-2023"
                     value={regNum}
@@ -202,7 +314,7 @@ export default function RegisterPage() {
                     required
                     id="register-ngo-reg"
                   />
-                  <Input
+                  <LightInput
                     label="Storage Capacity (kg)"
                     type="number"
                     value={capacity}
@@ -213,24 +325,47 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full mt-2" isLoading={isLoading}>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                id="register-submit"
+                className="w-full mt-2 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#fff',
+                  boxShadow: '0 4px 16px rgba(16,185,129,0.30)',
+                }}
+              >
+                {isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
                 Create Account
-              </Button>
+              </button>
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleOtpVerify} id="otp-form">
-              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-start gap-3">
+              <div
+                className="p-4 rounded-xl text-xs flex items-start gap-3"
+                style={{ backgroundColor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)', color: '#059669' }}
+              >
                 <Sparkles className="w-5 h-5 shrink-0 animate-bounce" />
                 <div>
                   <p className="font-semibold mb-1">Verify Email OTP</p>
                   <p>A verification code was dispatched. Enter it below to activate your account.</p>
-                  <p className="mt-2 font-mono text-[10px] bg-zinc-950 px-2 py-1 rounded inline-block text-zinc-400">
-                    Dev Mock OTP: <span className="text-white font-bold">{mockOtp}</span>
+                  <p
+                    className="mt-2 font-mono text-[10px] px-2 py-1 rounded inline-block"
+                    style={{ backgroundColor: 'rgba(15,23,42,0.06)', color: '#475569' }}
+                  >
+                    Dev Mock OTP: <span className="font-bold" style={{ color: '#0f172a' }}>{mockOtp}</span>
                   </p>
                 </div>
               </div>
 
-              <Input
+              <LightInput
                 label="Enter 6-Digit OTP Code"
                 type="text"
                 maxLength={6}
@@ -241,12 +376,27 @@ export default function RegisterPage() {
                 id="otp-code-input"
               />
 
-              <Button type="submit" className="w-full mt-2" isLoading={isLoading}>
+              <button
+                type="submit"
+                disabled={isLoading}
+                id="otp-submit"
+                className="w-full mt-2 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#fff',
+                  boxShadow: '0 4px 16px rgba(16,185,129,0.30)',
+                }}
+              >
+                {isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
                 Verify & Activate
-              </Button>
+              </button>
             </form>
           )}
-
         </div>
       </div>
     </div>

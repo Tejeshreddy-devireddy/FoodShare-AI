@@ -12,28 +12,49 @@ export function Button({
   size = 'md',
   isLoading = false,
   className = '',
+  style,
   children,
   ...props
 }: ButtonProps) {
-  const baseStyle = "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[#09090b] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-98 select-none";
-  
-  const variants = {
-    primary: "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20",
-    secondary: "bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700",
-    outline: "bg-transparent border border-zinc-700 hover:bg-zinc-800 text-zinc-300 hover:text-white",
-    ghost: "bg-transparent hover:bg-zinc-800 text-zinc-400 hover:text-white",
-    danger: "bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20"
+  const baseStyle = "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] select-none";
+
+  const variantStyles: Record<string, React.CSSProperties> = {
+    primary: {
+      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      color: '#fff',
+      boxShadow: '0 4px 14px rgba(16,185,129,0.28)',
+    },
+    secondary: {
+      backgroundColor: 'rgba(15,23,42,0.06)',
+      color: '#0f172a',
+      border: '1px solid rgba(15,23,42,0.12)',
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      color: '#475569',
+      border: '1px solid rgba(15,23,42,0.15)',
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      color: '#64748b',
+    },
+    danger: {
+      backgroundColor: 'rgba(239,68,68,0.08)',
+      color: '#dc2626',
+      border: '1px solid rgba(239,68,68,0.20)',
+    },
   };
 
   const sizes = {
     sm: "px-3 py-1.5 text-xs gap-1.5",
     md: "px-4 py-2.5 text-sm gap-2",
-    lg: "px-6 py-3.5 text-base gap-3"
+    lg: "px-6 py-3.5 text-base gap-3",
   };
 
   return (
     <button
-      className={`${baseStyle} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${baseStyle} ${sizes[size]} ${className}`}
+      style={{ ...variantStyles[variant], ...style }}
       disabled={isLoading || props.disabled}
       {...props}
     >

@@ -73,8 +73,8 @@ export default function NgoDashboard() {
     <div className="space-y-8" id="ngo-dashboard-root">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">NGO Command Center</h1>
-          <p className="text-zinc-400 text-sm mt-1">Review active surplus listings, accept donations, and dispatch volunteer couriers.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#0f172a' }}>NGO Command Center</h1>
+          <p className="text-sm mt-1" style={{ color: '#64748b' }}>Review active surplus listings, accept donations, and dispatch volunteer couriers.</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchDashboardData} disabled={isLoading}>
           <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -83,7 +83,7 @@ export default function NgoDashboard() {
       </div>
 
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs flex items-center gap-2">
+        <div className="p-3 rounded-xl text-xs flex items-center gap-2" style={{ backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)', color: '#dc2626' }}>
           <ShieldAlert className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
