@@ -474,13 +474,12 @@ export default function LandingPage() {
         y: -80,
       });
 
-      // Pin How It Works workflow timeline
+      // Sync How It Works timeline step with scroll position
       gsap.timeline({
         scrollTrigger: {
           trigger: '#how-it-works',
-          start: 'top top',
-          end: '+=1500', // Scroll pinned depth
-          pin: true,
+          start: 'top 60%',
+          end: 'bottom 40%',
           scrub: true,
           onUpdate: (self) => {
             const step = Math.min(3, Math.floor(self.progress * 4));
@@ -1132,12 +1131,8 @@ export default function LandingPage() {
       </motion.section>
 
       {/* --- 5. How It Works Section --- */}
-      <motion.section
+      <section
         id="how-it-works"
-        initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }}
-        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="py-32 relative z-10 scroll-mt-28"
         style={{ backgroundColor: 'transparent', borderTop: '1px solid rgba(15,23,42,0.07)', borderBottom: '1px solid rgba(15,23,42,0.07)' }}
       >
@@ -1215,7 +1210,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* --- 6. User Portals Section --- */}
       <motion.section
